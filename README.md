@@ -13,7 +13,7 @@ Implemented by **Ayoub Lahmar** ([@Redayoub-lang](https://github.com/Redayoub-la
 The minimax value function \(V(\mathbf{x}, t)\) governed by the Hamilton-Jacobi-Isaacs PDE satisfies:
 
 $$
--\frac{\partial V}{\partial t} = \max_{\mathbf{v} \in \mathcal{V}} \min_{\mathbf{u} \in \mathcal{U}} \Big\{ \nabla V^T f(\mathbf{x}, \mathbf{u}, \mathbf{v}) \Big\}
+-\frac{\partial V}{\partial t} = \max_{\mathbf{v} \in \mathcal{V}} \min_{\mathbf{u} \in \mathcal{U}} \left[ \nabla V^T f(\mathbf{x}, \mathbf{u}, \mathbf{v}) \right]
 $$
 
 Optimal pursuer control \(\mathbf{u}^*\) minimizes the objective value function under maximum maneuvering constraints:
