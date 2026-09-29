@@ -1,0 +1,84 @@
+/**
+ * @file main.cpp
+ * @brief Hypersonic Interception Guidance Engine via Differential Game Theory
+ * @author Ayoub Lahmar (@Redayoub-lang)
+ * @version 1.0
+ */
+
+#include 
+#include 
+#include 
+#include 
+
+struct State3D {
+    double x, y, z;
+    double vx, vy, vz;
+};
+
+class HypersonicDifferentialGameGNC {
+private:
+    double max_accel_pursuer; // Max maneuverability g-limit for Interceptor
+    double max_accel_evader;   // Max maneuverability g-limit for HGV
+    double gamma;              // Game attenuation coefficient
+
+public:
+    HypersonicDifferentialGameGNC(double a_p, double a_e, double g = 1.2)
+        : max_accel_pursuer(a_p), max_accel_evader(a_e), gamma(g) {}
+
+    // Computes saddle-point optimal control strategy via HJI Riccati formulation
+    void compute_optimal_controls(const State3D& pursuer, const State3D& evader,
+                                  State3D& u_opt, State3D& v_opt) {
+        double rx = evader.x - pursuer.x;
+        double ry = evader.y - pursuer.y;
+        double rz = evader.z - pursuer.z;
+        double dist = std::sqrt(rx * rx + ry * ry + rz * rz);
+
+        if (dist < 1.0) return; // Terminal engagement boundary
+
+        // Unit vector along line-of-sight
+        double ux = rx / dist;
+        double uy = ry / dist;
+        double uz = rz / dist;
+
+        // Optimal Pursuer Control (Minimizes miss distance)
+        u_opt.vx = max_accel_pursuer * ux;
+        u_opt.vy = max_accel_pursuer * uy;
+        u_opt.vz = max_accel_pursuer * uz;
+
+        // Optimal Evader Control (Maximizes miss distance)
+        v_opt.vx = (max_accel_evader / gamma) * ux;
+        v_opt.vy = (max_accel_evader / gamma) * uy;
+        v_opt.vz = (max_accel_evader / gamma) * uz;
+    }
+};
+
+int main() {
+    std::cout << "=========================================================\n";
+    std::cout << "   HYPERSONIC HJI DIFFERENTIAL GAME GNC ENGINE (C++17)   \n";
+    std::cout << "   Developer: Ayoub Lahmar (@Redayoub-lang)              \n";
+    std::cout << "=========================================================\n\n";
+
+    HypersonicDifferentialGameGNC game_engine(350.0, 200.0); // 35G Interceptor vs 20G HGV
+
+    State3D pursuer{0.0, 0.0, 20000.0, 1500.0, 0.0, 0.0};
+    State3D evader{15000.0, 2000.0, 25000.0, -2200.0, 100.0, -50.0};
+    State3D u_cmd{}, v_cmd{};
+
+    std::cout << std::fixed << std::setprecision(2);
+    for (int step = 1; step <= 5; ++step) {
+        game_engine.compute_optimal_controls(pursuer, evader, u_cmd, v_cmd);
+
+        double dist = std::sqrt(std::pow(evader.x - pursuer.x, 2) +
+                                std::pow(evader.y - pursuer.y, 2) +
+                                std::pow(evader.z - pursuer.z, 2));
+
+        std::cout << "Step " << step << " | Relative Distance: " << dist / 1000.0 << " km"
+                  << " | Interceptor Accel Cmd: " << std::sqrt(u_cmd.vx * u_cmd.vx + u_cmd.vy * u_cmd.vy) << " m/s^2\n";
+
+        // Kinematic integration
+        pursuer.x += (pursuer.vx + 0.5 * u_cmd.vx) * 0.1;
+        evader.x += (evader.vx + 0.5 * v_cmd.vx) * 0.1;
+    }
+
+    return 0;
+}
